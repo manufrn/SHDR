@@ -8,10 +8,16 @@ salinity or density) to an idealized analytical form
 $$
 f(z) = 
 \begin{cases}
-    a_1 & \text{si } z < D_1, \\
-    a_3 + b_3(z-D_1) + a_2 e^{\left(-b_2(z-D1)-c_2(z-D)^2\right)} & \text{si } z > D_1.
+    a_1 & \text{if} z < D_1, \\
+    a_3 + b_3(z-D_1) + a_2 e^{\left(-b_2(z-D_1)-c_2(z-D_1)^2\right)} & \text{if} z > D_1.
 \end{cases}
 $$
+
+with the parametres:
+* D_1 - Mixed Layer Depth
+* a_1 - Mixed Layer Temperature
+
+
 
 The function to, a sum of an exponential and gaussian decay, which define the
 pycnocline and a 
