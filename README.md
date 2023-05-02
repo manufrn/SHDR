@@ -42,4 +42,11 @@ Please refer to the user manual and example jupyter notebook.
 * ``numpy``, ``pandas``, ``tqdm``, ``matplotlib``
 
 
+## Citation
+If you use SHDR in your project, please cite the
+original work [González Pola et al. (2007)](https://www.sciencedirect.com/science/article/abs/pii/S0967063707002026). The code
+in this repository can be cited through (TODO: add DOI).
+
+
+
 
