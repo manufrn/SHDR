@@ -1,8 +1,72 @@
+'''
+This file shoulnd't be modified or run for any purpose. Place it in your 
+working directory, and import it's functions to use it. For more please
+information about using SHDR please refer to the user manual.
+'''
+
+import multiprocessing as mp
+from dataclasses import dataclass
 import numpy as np
 import pandas as pd
-import multiprocessing as mp
 from tqdm import tqdm
-from utilities import FitOptions, check_input
+
+@dataclass
+class FitOptions:
+    only_mld: bool = False
+    CR: float = 0.7
+    FF: float = 0.6
+    num_generations: int = 1200
+    num_individuals: int = 60
+    max_b2_c2: float = 0.5
+    exp_limit: float = 0.5
+    min_depth: float = 100
+    max_depth: float = 1000
+    min_obs: int = 6
+    tol: float = 0.00025
+    seed: int = None
+
+
+def process_input_field(arr):
+    if isinstance(arr, np.ma.core.MaskedArray):
+        processed_array = arr.astype(float).filled(np.nan)
+
+    else:
+        processed_array = np.asarray(arr, dtype=np.float64)
+
+    return np.squeeze(processed_array)
+
+
+def check_input(time, variable, depth, lat, lon):
+
+    # make sure to always work with np.ndarray
+    t = process_input_field(time)
+    y = process_input_field(variable)
+    z = process_input_field(depth)
+
+    # check if latitude and longitude are provided and check their length
+    if lat is None or lon is None:
+
+        if lat is not lon:
+            raise ValueError('Either neither or both lat and lon must be provided.')
+
+    else:
+        lat = process_input_field(lat)
+        lon = process_input_field(lon)
+
+        if time.shape != lat.shape or time.shape != lon.shape:
+            raise ValueError('lat and lon arrays must have the same length as time')
+         
+    # length and size checks to ensure input arrays are compatible
+    if time.ndim != 1:
+        raise ValueError('Time must be 1-D array.')
+
+    if variable.ndim != 2 or depth.ndim != 2:
+        raise ValueError('Depth and variable must be 2-D arrays.')
+
+    if time.shape[0] != variable.shape[0] or time.shape[0] != depth.shape[0]:
+        raise ValueError('First dimension of variable and depth arrays must have the same length as time')
+    
+    return time, variable, depth, lat, lon
 
 
 def fit_function(individuals, z, opts: FitOptions):
@@ -116,10 +180,10 @@ def diferential_evolution(individuals, y, z, lims, opts):
 def fit_profile(y, z, opts): 
     '''Parse and fit data from a single profile'''
 
-    # remove masks and work with normal arrays
-    if isinstance(z, np.ma.core.MaskedArray):
-        z = np.asarray(z[z.mask==False])
-        y = np.asarray(y[y.mask==False])
+    
+    # remove nans in both arrays
+    y = y[np.isfinite(z)]
+    z = z[np.isfinite(z)]
 
     z = z[np.isfinite(y)]
     y = y[np.isfinite(y)]
@@ -131,7 +195,7 @@ def fit_profile(y, z, opts):
         y = y[:max_z_idx]
     
     if len(z) < opts.min_obs:
-        return 9999.99, 9999.99, 9999.99, 9999.99, 9999.99, 9999.99, 9999.99, 9999.9
+        return np.repeat(np.nan, 8)
     
     lims_min, lims_max = get_fit_limits(y, z, opts)
     
@@ -171,6 +235,7 @@ def fit_profile(y, z, opts):
     a3 = a1 - a2 
     return np.array([D1, b2, c2, b3, a2, a1, a3, em])
 
+
 def format_result(result, time, lat, lon, opts):
       
     if opts.only_mld == True:
@@ -195,7 +260,7 @@ def run_multiprocessing_fit_pool(variable, depth, opts):
     pool_arguments = [[variable[i, :], depth[i, :], opts] for i in range(n)]
     with mp.Pool(processes=mp.cpu_count()) as pool:
         results_fit = pool.starmap(fit_profile, tqdm(pool_arguments,
-                                                          total=len(pool_arguments)), chunksize=1)
+                                                     total=len(pool_arguments)), chunksize=1)
     return results_fit
 
 
@@ -208,10 +273,3 @@ def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
     
     result_df = format_result(results_fit, time, lat, lon, opts)
     return result_df
-    
-    
-    
-
-
-
-
