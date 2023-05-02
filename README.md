@@ -24,17 +24,18 @@ with the parametres:
 ## Instalation and basic usage
 SHDR is a small package. To allow for simple usage, we decided to keep it small.
 To use it, download the file [SHDR.py](SHDR.py) and place it in you working
-directory. This files contains all the routines, meant to be imported in another
-.py file, jupyter notebook or straight from the python console. A sample call would be
+directory. This files contains all the routines needed to run SHDR, which should
+to be imported in another .py file, jupyter notebook or straight from the python console. 
+A sample call would be
 
 
 ```python
-from SHDR import fit_time_series
+from SHDR import fit_time_series # SHDR.py file in working directoy
 
 result = fit_time_series(time, density, depth, max_depth=400)
 ```
 
-Please refer to the user manual
+Please refer to the user manual and example jupyter notebook to understand
 
 
 
