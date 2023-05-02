@@ -21,7 +21,7 @@ with the parametres:
 * D_1 - Mixed Layer Depth
 * a_1 - Mixed Layer Temperature
 
-## Instalation and basic usage
+## Installation and basic usage
 SHDR is a small package. To allow for simple usage, we decided to keep it small.
 To use it, download the file [SHDR.py](SHDR.py) and place it in you working
 directory. This files contains all the routines needed to run SHDR, which should
@@ -35,8 +35,11 @@ from SHDR import fit_time_series # SHDR.py file in working directoy
 result = fit_time_series(time, density, depth, max_depth=400)
 ```
 
-Please refer to the user manual and example jupyter notebook to understand
+Please refer to the user manual and example jupyter notebook.
 
+## Requisites
+* ``python``
+* ``numpy``, ``pandas``, ``tqdm``, ``matplotlib``
 
 
 
