@@ -1,9 +1,8 @@
-from fitting import fit_time_series
+from SHDR import fit_time_series, fit_profile
 import numpy as np
 import pandas as pd
 import xarray as xr
 import netCDF4
-# from utils import fit_function
 
 data_path = 'data/station7.nc'
 
@@ -15,7 +14,17 @@ with netCDF4.Dataset(data_path, 'r') as f:
     lon = f['lon'][:]
 
 a = fit_time_series(time, temp, depth, max_depth=450)
+print(a)
 # print(a.loc['D1', 'em'])
 
 # print(fit_function(a.loc[1543396041:1547720560], 10))
 # print(fit_function(a.iloc[1], np.array([10, 20])))
+
+t = temp[0]
+d = depth[0]
+
+b = fit_profile(t, d, max_depth=400, only_mld=True)
+print(b)
+
+
+

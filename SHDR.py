@@ -12,6 +12,9 @@ from tqdm import tqdm
 
 @dataclass
 class FitOptions:
+    '''
+    Class holding fit options
+    '''
     only_mld: bool = False
     CR: float = 0.7
     FF: float = 0.6
@@ -39,9 +42,9 @@ def process_input_field(arr):
 def check_input(time, variable, depth, lat, lon):
 
     # make sure to always work with np.ndarray
-    t = process_input_field(time)
-    y = process_input_field(variable)
-    z = process_input_field(depth)
+    time = process_input_field(time)
+    variable = process_input_field(variable)
+    depth = process_input_field(depth)
 
     # check if latitude and longitude are provided and check their length
     if lat is None or lon is None:
@@ -177,9 +180,11 @@ def diferential_evolution(individuals, y, z, lims, opts):
     return best_fit, present_fitns[best_fit_loc]
 
 
-def fit_profile(y, z, opts): 
+def _fit_profile(y, z, opts): 
     '''Parse and fit data from a single profile'''
-
+    
+    if y.size != z.size:
+        return ValueError('y and z must have the same size')
     
     # remove nans in both arrays
     y = y[np.isfinite(z)]
@@ -233,10 +238,12 @@ def fit_profile(y, z, opts):
     D1, b2, c2, b3, a2, a1 = result
     em = fitness
     a3 = a1 - a2 
+
     return np.array([D1, b2, c2, b3, a2, a1, a3, em])
 
 
-def format_result(result, time, lat, lon, opts):
+def _format_result(result, time, lat, lon, opts):
+    ''''''
       
     if opts.only_mld == True:
         columns = ['D1', 'em']
@@ -246,7 +253,7 @@ def format_result(result, time, lat, lon, opts):
         columns = ['D1', 'b2', 'c2', 'b3', 'a2', 'a1', 'a3', 'em']
         result_df = pd.DataFrame(result, columns=columns)
     
-    result_df.set_index(time, inplace=True)
+    result_df.insert(0, 'time', time)
 
     if lat is not None:
         result_df.insert(1, 'lat', lat)
@@ -255,21 +262,89 @@ def format_result(result, time, lat, lon, opts):
     return result_df
 
 
-def run_multiprocessing_fit_pool(variable, depth, opts):
+def _run_multiprocessing_fit_pool(variable, depth, opts):
     n = variable.shape[0]
     pool_arguments = [[variable[i, :], depth[i, :], opts] for i in range(n)]
     with mp.Pool(processes=mp.cpu_count()) as pool:
-        results_fit = pool.starmap(fit_profile, tqdm(pool_arguments,
+        results_fit = pool.starmap(_fit_profile, tqdm(pool_arguments,
                                                      total=len(pool_arguments)), chunksize=1)
     return results_fit
 
 
 def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
+    '''
+    Fit a time series record using the SHDR algorithm. 
+
+    Parametres
+    ----------
+    time : array_like
+        Time coordinate. At the moment any format is accepted. Beware of this 
+        when using non python time formats (eg. matlab datenum).
+    variable : array_like
+        2D array containing variable to be fitted (temperature, density or salinity). 
+        First dimension is temporal.
+    depth : array_like
+        2D array defining the vertical coordinate. First dimension is temporal.
+    lat : array_like, optional
+        Latitude.
+    lon : array_like, optional
+        Longitude.
+
+    Other parametres
+    ----------------
+    only_mld : bool default=False
+        If True, only the parameter D1 is returned.
+    max_depth: float default=1000
+        Maximun depth of the profile to consider for fitting.
+    min_depth: float default=100
+        Minium maximal depth of the profile to perform fitting.
+    min_obs: int default=6
+        Minimum number of observations in the profile to perform fitting.
+    CR : float default=0.7
+        Cross probability (diferential evolution algorithm).
+    FF: float default=0.6
+        Mutation factor (diferential evolution algorithm).
+    num_generations: int default=1200
+        Number of generations (diferential evolution algorithm).
+    num_individuals: int default=60
+        Number of individuals (diferential evolution algorithm).
+    max_b2_c2 : float default=0.5
+        Maximum value for b2 and c2 coefficients.
+    exp_limit : float default=0.5
+        Maximum decay.
+    tol : float default=0.00025
+        Tolerance (diferential evolution algorithm).
+    seed : int default=None
+        Random seed (diferential evolution algorithm).
+
+    Returns
+    -------
+    pd.DataFrame
+
+    '''
      
     time, variable, depth, lat, lon = check_input(time, variable, depth, lat, lon) 
     opts = FitOptions(**opts) 
     
-    results_fit = run_multiprocessing_fit_pool(variable, depth, opts)
+    results_fit = _run_multiprocessing_fit_pool(variable, depth, opts)
     
-    result_df = format_result(results_fit, time, lat, lon, opts)
+    result_df = _format_result(results_fit, time, lat, lon, opts)
     return result_df
+
+def fit_profile(y, z, **opts):
+    opts = FitOptions(**opts)
+    y = process_input_field(y)
+    z = process_input_field(z)
+
+    result_fit = _fit_profile(y, z, opts)
+
+    if opts.only_mld:
+        result = np.asarray(result_fit[0])
+
+    else:
+        result  = result_fit
+
+    return result
+
+
+
