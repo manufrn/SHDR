@@ -12,8 +12,8 @@ from tqdm import tqdm
 
 @dataclass
 class FitOptions:
-    '''
-    Class holding fit options
+    '''Class defining options for the fitting algorithm.
+
     '''
     only_mld: bool = False
     CR: float = 0.7
@@ -39,7 +39,11 @@ def process_input_field(arr):
     return np.squeeze(processed_array)
 
 
-def check_input(time, variable, depth, lat, lon):
+def check_time_series_input(time, variable, depth, lat, lon):
+    ''' Check dimensional consistency of the input fields 
+    and return a processed version.
+
+    '''
 
     # make sure to always work with np.ndarray
     time = process_input_field(time)
@@ -73,7 +77,9 @@ def check_input(time, variable, depth, lat, lon):
 
 
 def fit_function(individuals, z, opts: FitOptions):
-    '''Estimate the function a group of individuals at a height z'''
+    '''Estimate the function a group of individuals at a height z
+
+    '''
 		
     limit = opts.exp_limit
     D1, b2, c2, b3, a2, a1 = np.split(individuals, 6, axis=1)
@@ -90,7 +96,9 @@ def fit_function(individuals, z, opts: FitOptions):
 
 def get_fit_limits(y, z, opts: FitOptions):
     '''Returns the limits for the parametres of the fit function given a certain
-       profile with meassures y at heights z.'''
+       profile with meassures y at heights z.
+
+    '''
        
     z = np.abs(z) # in case heights are defined negative
 
@@ -112,9 +120,11 @@ def get_fit_limits(y, z, opts: FitOptions):
 
 
 def random_init_population(y, z, opts: FitOptions):
-    ''' Returns a random population of solutions of size num_individuals 
-    initialized randomly with values inside limits for a profile with meassures
-    y at heights z '''
+    ''' Returns a random population of solutions of initialized randomly 
+    with values inside the limits for a profile with meassures
+    y at heights z 
+    
+    '''
     
     n = opts.num_individuals 
     lims_min, lims_max = get_fit_limits(y, z, opts)
@@ -127,13 +137,18 @@ def random_init_population(y, z, opts: FitOptions):
 
 
 def population_fitness(individuals, y, z, opts):
-    '''Estimate the fitting for a group of individuals via mean squared error'''
+    '''Estimate the fitting for a group of individuals via mean squared error
+    '''
     
     fitness = np.sqrt(np.sum((y - fit_function(individuals, z, opts))**2, axis=1) / len(y))
     return fitness
 
 
 def diferential_evolution(individuals, y, z, lims, opts):
+    ''' Perform a diferential evolution on a group of individuals 
+    for a given profile with meassures y at depths z
+
+    '''
 
     n = opts.num_individuals
     lims_min, lims_max = lims
@@ -294,19 +309,19 @@ def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
     ----------------
     only_mld : bool default=False
         If True, only the parameter D1 is returned.
-    max_depth: float default=1000
+    max_depth : float default=1000
         Maximun depth of the profile to consider for fitting.
-    min_depth: float default=100
+    min_depth : float default=100
         Minium maximal depth of the profile to perform fitting.
-    min_obs: int default=6
+    min_obs : int default=6
         Minimum number of observations in the profile to perform fitting.
     CR : float default=0.7
         Cross probability (diferential evolution algorithm).
-    FF: float default=0.6
+    FF : float default=0.6
         Mutation factor (diferential evolution algorithm).
-    num_generations: int default=1200
+    num_generations : int default=1200
         Number of generations (diferential evolution algorithm).
-    num_individuals: int default=60
+    num_individuals : int default=60
         Number of individuals (diferential evolution algorithm).
     max_b2_c2 : float default=0.5
         Maximum value for b2 and c2 coefficients.
@@ -323,7 +338,7 @@ def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
 
     '''
      
-    time, variable, depth, lat, lon = check_input(time, variable, depth, lat, lon) 
+    time, variable, depth, lat, lon = check_time_series_input(time, variable, depth, lat, lon) 
     opts = FitOptions(**opts) 
     
     results_fit = _run_multiprocessing_fit_pool(variable, depth, opts)
@@ -332,6 +347,48 @@ def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
     return result_df
 
 def fit_profile(y, z, **opts):
+    '''
+    Fit a single vertical profile using the SHDR algorithm.
+
+    Parametres
+    ---------
+    y : array_like
+        Variable to be fitted (temperature, density or salinity).
+    z : array_like
+        Vertical coordinate.
+
+    Other parametres
+    ----------------
+    only_mld : bool default=False
+        If True, only the parameter D1 is returned.
+    max_depth : float default=1000
+        Maximun depth of the profile to consider for fitting.
+    min_depth : float default=100
+        Minium maximal depth of the profile to perform fitting.
+    min_obs : int default=6
+        Minimum number of observations in the profile to perform fitting.
+    CR : float default=0.7
+        Cross probability (diferential evolution algorithm).
+    FF: float default=0.6
+        Mutation factor (diferential evolution algorithm).
+    num_generations : int default=1200
+        Number of generations (diferential evolution algorithm).
+    num_individuals : int default=60
+        Number of individuals (diferential evolution algorithm).
+    max_b2_c2 : float default=0.5
+        Maximum value for b2 and c2 coefficients.
+    exp_limit : float default=0.5
+        Maximum decay.
+    tol : float default=0.00025
+        Tolerance (diferential evolution algorithm).
+    seed : int default=None
+        Random seed (diferential evolution algorithm).
+
+    Returns
+    -------
+    pd.DataFrame
+    '''
+
     opts = FitOptions(**opts)
     y = process_input_field(y)
     z = process_input_field(z)

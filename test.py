@@ -23,6 +23,7 @@ print(a)
 t = temp[0]
 d = depth[0]
 
+print(help(fit_time_series))
 b = fit_profile(t, d, max_depth=400, only_mld=True)
 print(b)
 
