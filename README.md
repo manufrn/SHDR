@@ -14,9 +14,9 @@ but it also allows for a physical characterisation of the pycnocline.
 SHDR is a small package. To keep things simple, we decided to source it 
 as a standalone module in a single file. To use it, download the file [SHDR.py](SHDR.py) 
 and place it in you working directory. This file contains all the routines needed to run 
-SHDR, which should to be imported in your preferred programming environment.
-A sample call would be
+SHDR, which should be imported in your preferred programming environment. 
 
+A sample call would be
 
 ```python
 from SHDR import fit_time_series # SHDR.py file in working directoy
@@ -24,8 +24,8 @@ from SHDR import fit_time_series # SHDR.py file in working directoy
 result = fit_time_series(time, density, depth, max_depth=400)
 ```
 
-Please refer to the user manual and the [example jupyter notebook](examples.ipynb) to 
-.
+The user manual contains extensive information on how to use the module. 
+For a real use case, please see the [example jupyter notebook](examples.ipynb).
 
 ## Requisites
 * ``python``
