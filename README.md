@@ -4,22 +4,11 @@ Python implementation of the upper ocean structure fitting algorithm described i
 [González Pola et al. (2007)](https://www.sciencedirect.com/science/article/abs/pii/S0967063707002026).
 The SHDR algorithm (*Sharp Homogenization/Diffusive Retreat*) performs a
 differential evolution search to fit an upper ocean profile (temperature,
-salinity or density) to an idealized analytical form. It can be used to estimate
-the mixed layer depth of a given profile without any further information. It
-also allows for a physical characterisation of the seasonal and permanent
-pycnoclines. 
-
-$$
-f(z) = 
-\begin{cases}
-    a_1 & \text{if} z < D_1, \\
-    a_3 + b_3(z-D_1) + a_2 e^{\left(-b_2(z-D_1)-c_2(z-D_1)^2\right)} & \text{if} z > D_1.
-\end{cases}
-$$
-
-with the parametres:
-* D_1 - Mixed Layer Depth
-* a_1 - Mixed Layer Temperature
+salinity or density) to an idealized analytical form. This analytical form
+defines a region with constant tracer (MLD), followed by a combination of
+exponential and gaussian decays (seasonal pycnocline) and a linear decay
+(permanent pycnocline). The algorithm can be used as a MLD identifying method,
+but it also allows for a physical characterisation of the pycnocline. 
 
 ## Installation and basic usage
 SHDR is a small package. To allow for simple usage, we decided to keep it small.

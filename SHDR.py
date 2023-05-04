@@ -16,12 +16,13 @@ class FitOptions:
 
     '''
     only_mld: bool = False
-    CR: float = 0.7
-    FF: float = 0.6
+    delta_coding: bool = False
+    CR: float = 0.5
+    FF: float = 0.5
     num_generations: int = 1200
     num_individuals: int = 60
     max_b2_c2: float = 0.5
-    exp_limit: float = 0.5
+    exp_limit: float = 100
     min_depth: float = 100
     max_depth: float = 1000
     min_obs: int = 6
@@ -110,16 +111,16 @@ def get_fit_limits(y, z, opts: FitOptions):
             [0.0, opts.max_b2_c2],    # c2
             [0.0 if max_z < opts.min_depth else - abs((max_y - min_y) / (max_z - min_z)), 0.0], # b3
             [0.0, max_y - min_y],     # a2
-            [min_y, max_y]])          # a1
-            
+            [min_y, max_y]])          # a1          
+
 
     lims_min = lims[:, 0]
     lims_max = lims[:, 1]
     
-    return lims_min, lims_max
+    return (lims_min, lims_max)
 
 
-def random_init_population(y, z, opts: FitOptions):
+def random_init_population(y, z, lims, opts: FitOptions):
     ''' Returns a random population of solutions of initialized randomly 
     with values inside the limits for a profile with meassures
     y at heights z 
@@ -127,7 +128,7 @@ def random_init_population(y, z, opts: FitOptions):
     '''
     
     n = opts.num_individuals 
-    lims_min, lims_max = get_fit_limits(y, z, opts)
+    lims_min, lims_max = lims
     n_var = np.size(lims_max)
     
     norm = lims_max - lims_min
@@ -217,12 +218,12 @@ def _fit_profile(y, z, opts):
     if len(z) < opts.min_obs:
         return np.repeat(np.nan, 8)
     
-    lims_min, lims_max = get_fit_limits(y, z, opts)
+    lims = get_fit_limits(y, z, opts)
     
 
-    lims = (lims_min, lims_max)
+    lims_min, lims_max = lims
 
-    first_gen = random_init_population(y, z, opts)
+    first_gen = random_init_population(y, z, lims, opts)
     result_1, fitness_1 = diferential_evolution(first_gen, y, z, lims, opts)  
     
     
@@ -230,25 +231,33 @@ def _fit_profile(y, z, opts):
     
     # set new limits for fit in function of previous fit result
     # and have them meet the physical limits
-    v_min, v_max = 0.85 * result_1, 1.15 * result_1
-    for i in range(6):
-        lim_min_d = min(v_min[i], v_max[i])
-        lim_max_d = max(v_min[i], v_max[i])
-        lims_min[i] = max(lims_min[i], lim_min_d)
-        lims_max[i] = max(lims_max[i], lim_max_d)
-    lims_delta = (lims_min, lims_max)
 
-    first_gen = random_init_population(y, z, opts)   # new first generation
+    if opts.delta_coding:
+        lims_min_d, lims_max_d = 0.85 * result_1, 1.15 * result_1
+        for i in np.where(np.sign(result_1) < 0)[0]:
+            lims_min_d[i], lims_max_d[i] = lims_max_d[i], lims_min_d[i]
 
-    result_delta, fitness_delta = diferential_evolution(first_gen, y, z, lims, opts)
+        lims_min_delta = np.where(lims_min_d >= lims_min, lims_min_d,  lims_min)
+        lims_max_delta = np.where(lims_max_d <= lims_max, lims_max_d, lims_max)
 
 
-    if fitness_1 < fitness_delta:
-        result = result_1
-        fitness = fitness_1 
+        lims_delta = (lims_min_delta, lims_max_delta)
+
+        first_gen = random_init_population(y, z, lims_delta, opts)   # new first generation
+
+        result_delta, fitness_delta = diferential_evolution(first_gen, y, z, lims_delta, opts)
+
+
+        if fitness_1 < fitness_delta:
+            result = result_1
+            fitness = fitness_1 
+        else:
+            result = result_delta
+            fitness = fitness_delta 
+
     else:
-        result = result_delta
-        fitness = fitness_delta 
+        result = result_1
+        fitness = fitness_1
 
     D1, b2, c2, b3, a2, a1 = result
     em = fitness
