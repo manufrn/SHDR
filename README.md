@@ -10,11 +10,11 @@ exponential and gaussian decays (seasonal pycnocline) and a linear decay
 (permanent pycnocline). The algorithm can be used as a MLD identifying method,
 but it also allows for a physical characterisation of the pycnocline. 
 
-## Installation and basic usage
-SHDR is a small package. To allow for simple usage, we decided to keep it small.
-To use it, download the file [SHDR.py](SHDR.py) and place it in you working
-directory. This files contains all the routines needed to run SHDR, which should
-to be imported in another .py file, jupyter notebook or straight from the python console. 
+## Installation
+SHDR is a small package. To keep things simple, we decided to source it 
+as a standalone module in a single file. To use it, download the file [SHDR.py](SHDR.py) 
+and place it in you working directory. This file contains all the routines needed to run 
+SHDR, which should to be imported in your preferred programming environment.
 A sample call would be
 
 
@@ -24,7 +24,8 @@ from SHDR import fit_time_series # SHDR.py file in working directoy
 result = fit_time_series(time, density, depth, max_depth=400)
 ```
 
-Please refer to the user manual and example jupyter notebook.
+Please refer to the user manual and the [example jupyter notebook](examples.ipynb) to 
+.
 
 ## Requisites
 * ``python``

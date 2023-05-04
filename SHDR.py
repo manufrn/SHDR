@@ -395,7 +395,7 @@ def fit_profile(y, z, **opts):
 
     Returns
     -------
-    pd.DataFrame
+    np.ndarray
     '''
 
     opts = FitOptions(**opts)
