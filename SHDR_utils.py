@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def fit_function(params, z):
+def fit_function(z, params):
     '''
     Returns the fit function at a given height for.
 

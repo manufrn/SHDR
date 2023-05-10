@@ -1,4 +1,4 @@
-# SHDR_test
+# SHDR
 
 Python implementation of the upper ocean structure fitting algorithm described in
 [González Pola et al. (2007)](https://www.sciencedirect.com/science/article/abs/pii/S0967063707002026).
@@ -28,8 +28,9 @@ The user manual contains extensive information on how to use the module.
 For a real use case, please see the [example jupyter notebook](examples.ipynb).
 
 ## Requisites
-* ``python``
+* ``python3``
 * ``numpy``, ``pandas``, ``tqdm``, ``matplotlib``
+
 
 
 ## Citation

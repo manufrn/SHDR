@@ -67,9 +67,16 @@ def check_time_series_input(time, variable, depth, lat, lon):
     # length and size checks to ensure input arrays are compatible
     if time.ndim != 1:
         raise ValueError('Time must be 1-D array.')
+    
+    if depth.ndim > 2:
+        raise ValueError('Depth must be 1-D or 2-D array.')
 
-    if variable.ndim != 2 or depth.ndim != 2:
-        raise ValueError('Depth and variable must be 2-D arrays.')
+    if depth.ndim == 1:
+        # if depth is 1-D, broadcast it to 2-D
+        depth = np.broadcast_to(depth, variable.shape)
+
+    if variable.ndim != 2:
+        raise ValueError('Variable must be 2-D array.')
 
     if time.shape[0] != variable.shape[0] or time.shape[0] != depth.shape[0]:
         raise ValueError('First dimension of variable and depth arrays must have the same length as time')
@@ -413,4 +420,5 @@ def fit_profile(y, z, **opts):
     return result
 
 
-
+def fit_dataset(y, z, opts):
+    _fit_profile_v = np.vectorize(_fit_profile)
