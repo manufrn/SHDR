@@ -11,7 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 
 @dataclass
-class FitOptions:
+class _FitOptions:
     '''Class defining options for the fitting algorithm.
 
     '''
@@ -30,7 +30,7 @@ class FitOptions:
     seed: int = None
 
 
-def process_input_field(arr):
+def _process_input_field(arr):
     if isinstance(arr, np.ma.core.MaskedArray):
         processed_array = arr.astype(float).filled(np.nan)
 
@@ -40,16 +40,16 @@ def process_input_field(arr):
     return np.squeeze(processed_array)
 
 
-def check_time_series_input(time, variable, depth, lat, lon):
+def _check_time_series_input(time, variable, depth, lat, lon):
     ''' Check dimensional consistency of the input fields 
     and return a processed version.
 
     '''
 
     # make sure to always work with np.ndarray
-    time = process_input_field(time)
-    variable = process_input_field(variable)
-    depth = process_input_field(depth)
+    time = _process_input_field(time)
+    variable = _process_input_field(variable)
+    depth = _process_input_field(depth)
 
     # check if latitude and longitude are provided and check their length
     if lat is None or lon is None:
@@ -84,7 +84,9 @@ def check_time_series_input(time, variable, depth, lat, lon):
     return time, variable, depth, lat, lon
 
 
-def fit_function(individuals, z, opts: FitOptions):
+
+
+def _fit_function(individuals, z, opts: _FitOptions):
     '''Estimate the function a group of individuals at a height z
 
     '''
@@ -102,7 +104,7 @@ def fit_function(individuals, z, opts: FitOptions):
     return a1 + pos * (b3 * (z - D1) + a2 * (np.exp(exponent) - 1.0))
 
 
-def get_fit_limits(y, z, opts: FitOptions):
+def _get_fit_limits(y, z, opts: _FitOptions):
     '''Returns the limits for the parametres of the fit function given a certain
        profile with meassures y at heights z.
 
@@ -127,7 +129,7 @@ def get_fit_limits(y, z, opts: FitOptions):
     return (lims_min, lims_max)
 
 
-def random_init_population(y, z, lims, opts: FitOptions):
+def _random_init_population(y, z, lims, opts: _FitOptions):
     ''' Returns a random population of solutions of initialized randomly 
     with values inside the limits for a profile with meassures
     y at heights z 
@@ -144,15 +146,15 @@ def random_init_population(y, z, lims, opts: FitOptions):
     return individuals
 
 
-def population_fitness(individuals, y, z, opts):
+def _population_fitness(individuals, y, z, opts):
     '''Estimate the fitting for a group of individuals via mean squared error
     '''
     
-    fitness = np.sqrt(np.sum((y - fit_function(individuals, z, opts))**2, axis=1) / len(y))
+    fitness = np.sqrt(np.sum((y - _fit_function(individuals, z, opts))**2, axis=1) / len(y))
     return fitness
 
 
-def diferential_evolution(individuals, y, z, lims, opts):
+def _diferential_evolution(individuals, y, z, lims, opts):
     ''' Perform a diferential evolution on a group of individuals 
     for a given profile with meassures y at depths z
 
@@ -162,7 +164,7 @@ def diferential_evolution(individuals, y, z, lims, opts):
     lims_min, lims_max = lims
     n_var = np.size(lims_max)
      
-    present_fitns = population_fitness(individuals, y, z, opts)
+    present_fitns = _population_fitness(individuals, y, z, opts)
 
     best_fit_loc = present_fitns.argmin()
     best_fit = individuals[best_fit_loc]
@@ -186,7 +188,7 @@ def diferential_evolution(individuals, y, z, lims, opts):
         new_gen = np.where(new_gen < lims_min.reshape((1,6)), lims_min.reshape((1,6)), new_gen)
         new_gen = np.where(new_gen > lims_max.reshape((1,6)), lims_max.reshape((1,6)), new_gen)
 
-        new_fitns = population_fitness(new_gen, y, z, opts)
+        new_fitns = _population_fitness(new_gen, y, z, opts)
 
         
         # update individuals to new generation
@@ -225,13 +227,13 @@ def _fit_profile(y, z, opts):
     if len(z) < opts.min_obs:
         return np.repeat(np.nan, 8)
     
-    lims = get_fit_limits(y, z, opts)
+    lims = _get_fit_limits(y, z, opts)
     
 
     lims_min, lims_max = lims
 
-    first_gen = random_init_population(y, z, lims, opts)
-    result_1, fitness_1 = diferential_evolution(first_gen, y, z, lims, opts)  
+    first_gen = _random_init_population(y, z, lims, opts)
+    result_1, fitness_1 = _diferential_evolution(first_gen, y, z, lims, opts)  
     
     
     #### DELTA CODING ####
@@ -250,9 +252,9 @@ def _fit_profile(y, z, opts):
 
         lims_delta = (lims_min_delta, lims_max_delta)
 
-        first_gen = random_init_population(y, z, lims_delta, opts)   # new first generation
+        first_gen = _random_init_population(y, z, lims_delta, opts)   # new first generation
 
-        result_delta, fitness_delta = diferential_evolution(first_gen, y, z, lims_delta, opts)
+        result_delta, fitness_delta = _diferential_evolution(first_gen, y, z, lims_delta, opts)
 
 
         if fitness_1 < fitness_delta:
@@ -273,7 +275,7 @@ def _fit_profile(y, z, opts):
     return np.array([D1, b2, c2, b3, a2, a1, a3, em])
 
 
-def _format_result(result, time, lat, lon, opts):
+def _format_time_series_result(result, time, lat, lon, opts):
     ''''''
       
     if opts.only_mld == True:
@@ -354,12 +356,14 @@ def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
 
     '''
      
-    time, variable, depth, lat, lon = check_time_series_input(time, variable, depth, lat, lon) 
-    opts = FitOptions(**opts) 
+    time, variable, depth, lat, lon = _check_time_series_input(time, variable, depth, lat, lon) 
+    opts = _FitOptions(**opts) 
+
+    np.random.seed(opts.seed)
     
     results_fit = _run_multiprocessing_fit_pool(variable, depth, opts)
     
-    result_df = _format_result(results_fit, time, lat, lon, opts)
+    result_df = _format_time_series_result(results_fit, time, lat, lon, opts)
     return result_df
 
 def fit_profile(y, z, **opts):
@@ -402,12 +406,20 @@ def fit_profile(y, z, **opts):
 
     Returns
     -------
-    np.ndarray
+    np.ndarray containing fit parametres in the order
+    [D1, b2, c2, b3, a2, a1, a3, em]. If only_mld opt is
+    True, returns [D1].
+
     '''
 
-    opts = FitOptions(**opts)
-    y = process_input_field(y)
-    z = process_input_field(z)
+    opts = _FitOptions(**opts)
+    np.random.seed(opts.seed)
+
+    y = _process_input_field(y)
+    z = _process_input_field(z)
+
+    if y.ndim > 1 or z.ndim > 1:
+        raise ValueError('y and z must be 1-D arrays.')
 
     result_fit = _fit_profile(y, z, opts)
 
@@ -419,6 +431,3 @@ def fit_profile(y, z, **opts):
 
     return result
 
-
-def fit_dataset(y, z, opts):
-    _fit_profile_v = np.vectorize(_fit_profile)
