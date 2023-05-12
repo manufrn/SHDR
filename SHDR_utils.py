@@ -10,20 +10,35 @@ def fit_function(z, params):
 
     '''
 
+    if len(list(params)) <= 2:
+        raise ValueError("Params must be the complete set of parameters. "\
+                         "Set only_mld to False when performing the fit "\
+                         "to later use this function")
+
     if isinstance(params, pd.core.series.Series):
+
         columns = ['D1', 'b2', 'c2', 'b3', 'a2', 'a1']
         D1, b2, c2, b3, a2, a1 = params[columns]
 
     elif isinstance(params, np.ndarray):
         D1, b2, c2, b3, a2, a1 = params[:6]
-    print(D1)
+
     pos = np.where(z >= D1, 1.0, 0.0)
     exponent = - (z - D1) * (b2 + (z - D1) * c2)
+
     return a1 + pos * (b3 * (z - D1) + a2 * (np.exp(exponent) - 1.0))
 
+
 def compute_stratification(params, alpha=0.05):
+    '''Compute the stratification index G'''
+
+    if len(list(params)) <= 2:
+        raise ValueError("Params must be the complete set of parameters. "\
+                         "Set only_mld to False when performing the fit "\
+                         "to later use this function.")
 
     if isinstance(params, pd.core.series.Series):
+
         columns = ['D1', 'b2', 'c2']
         D1, b2, c2 = params[columns]
 

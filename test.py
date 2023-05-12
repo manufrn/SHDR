@@ -13,16 +13,17 @@ with netCDF4.Dataset(data_path, 'r') as f:
     lat = f['lat'][:]
     lon = f['lon'][:]
 
-a = fit_time_series(time, temp, depth, max_depth=450, delta_coding=True, save='results/results_1.csv')
+a = fit_time_series(time, temp, depth, max_depth=450, delta_coding=True,
+                    save='results/results_1.csv', only_mld=False)
 
-print(time_series_stratification('results_1.csv'))
+
+print(time_series_stratification(a))
 
 
-# p.parentrint(fit_function(10, a.loc[0]))
 
 a = []
 for i in range(len(time)):
-    a.append(fit_profile(temp[i], depth[i], max_depth=450))
+    a.append(fit_profile(temp[i], depth[i], max_depth=450, only_mld=True))
 
 print(compute_stratification(a[0]))
 print(fit_function(10, a[0]))

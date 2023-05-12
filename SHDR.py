@@ -1,16 +1,16 @@
 '''
-This file shoulnd't be modified or run for any purpose. Place it in your 
+This file shouldn't be modified or run for any purpose. Place it in your 
 working directory, and import it's functions to use it. For more please
 information about using SHDR please refer to the user manual.
 '''
 
 import sys
+from tqdm import tqdm
+from pathlib import Path
 import multiprocessing as mp
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from pathlib import Path
 
 @dataclass
 class _FitOptions:
@@ -25,9 +25,9 @@ class _FitOptions:
     num_individuals: int = 60
     max_b2_c2: float = 0.5
     exp_limit: float = 100
-    min_depth: float = 100
+    min_depth: float = 50
     max_depth: float = 1000
-    min_obs: int = 6
+    min_obs: int = 10
     tol: float = 0.00025
     seed: int = None
     save: str = None
@@ -293,8 +293,8 @@ def _format_time_series_result(result, time, lat, lon, opts):
     ''''''
       
     if opts.only_mld == True:
-        columns = ['D1', 'em']
-        result_df = pd.DataFrame([[i[0], i[-1]] for i in result], columns=columns)
+        columns = ['D1']
+        result_df = pd.DataFrame([i[0] for i in result], columns=columns)
     
     else:
         columns = ['D1', 'b2', 'c2', 'b3', 'a2', 'a1', 'a3', 'em']
@@ -443,7 +443,7 @@ def fit_profile(y, z, **opts):
     result_fit = _fit_profile(y, z, opts)
 
     if opts.only_mld:
-        result = np.asarray(result_fit[0])
+        result = np.asarray([result_fit[0]])
 
     else:
         result  = result_fit
