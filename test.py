@@ -1,4 +1,4 @@
-from SHDR_utils import plot_profile_fit
+from SHDR_utils import plot_profile_fit, fit_function, compute_stratification, time_series_stratification
 from SHDR import fit_time_series, fit_profile
 import numpy as np
 import pandas as pd
@@ -13,17 +13,19 @@ with netCDF4.Dataset(data_path, 'r') as f:
     lat = f['lat'][:]
     lon = f['lon'][:]
 
-a = fit_time_series(time, temp, depth, max_depth=450, delta_coding=True)
+a = fit_time_series(time, temp, depth, max_depth=450, delta_coding=True, save='results/results_1.csv')
+
+print(time_series_stratification('results_1.csv'))
+
+
+# p.parentrint(fit_function(10, a.loc[0]))
 
 a = []
 for i in range(len(time)):
     a.append(fit_profile(temp[i], depth[i], max_depth=450))
-# plot_profile_fit(temp[5], depth[5], a.iloc[5])
 
-# print(a.loc['D1', 'em'])
-
-# print(fit_function(a.loc[1543396041:1547720560], 10))
-# print(fit_function(a.iloc[1], np.array([10, 20])))
+print(compute_stratification(a[0]))
+print(fit_function(10, a[0]))
 
 
 

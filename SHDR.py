@@ -4,11 +4,13 @@ working directory, and import it's functions to use it. For more please
 information about using SHDR please refer to the user manual.
 '''
 
+import sys
 import multiprocessing as mp
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from pathlib import Path
 
 @dataclass
 class _FitOptions:
@@ -28,6 +30,7 @@ class _FitOptions:
     min_obs: int = 6
     tol: float = 0.00025
     seed: int = None
+    save: str = None
 
 
 def _process_input_field(arr):
@@ -84,6 +87,17 @@ def _check_time_series_input(time, variable, depth, lat, lon):
     return time, variable, depth, lat, lon
 
 
+def _check_save_path(path):
+    if not path.endswith('.csv'):
+        raise ValueError("Output file must be '.csv'")
+    
+    if Path(path).exists():
+        promt = input('Output file already exists, do you want to overwrite it? [Y/n]: ')
+        if promt.lower() == 'n':
+            sys.exit() 
+
+    # create parent directory for path if it doesn't exist
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
 
 
 def _fit_function(individuals, z, opts: _FitOptions):
@@ -364,6 +378,11 @@ def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
     results_fit = _run_multiprocessing_fit_pool(variable, depth, opts)
     
     result_df = _format_time_series_result(results_fit, time, lat, lon, opts)
+    
+    if opts.save is not None:
+        _check_save_path(opts.save)
+        result_df.to_csv(opts.save, index=False)
+
     return result_df
 
 def fit_profile(y, z, **opts):
@@ -429,5 +448,8 @@ def fit_profile(y, z, **opts):
     else:
         result  = result_fit
 
+    if opts.save is not None:
+        _check_save_path(opts.save)
+        result_df.to_csv(opts.save, index=False)
     return result
 
