@@ -28,16 +28,19 @@ The [user manual](user_manual.pdf) contains extensive information on how to use 
 For a real use case, please see the [example jupyter notebook](examples.ipynb).
 
 ## Requisites
-* ``python>=3.6``. Tested on python 3.10.
+* ``python>=3.6``. Tested on python 3.10.``
 * ``numpy, pandas, tqdm
 
 Please ensure these are installed.
 
 If using pip:
+
 ``pip3 install --user numpy, pandas, tqdm``
 
 If using conda:
+
 ``conda install numpy, pandas ``
+
 ``conda install -c conda-forge tqdm``
 
 
