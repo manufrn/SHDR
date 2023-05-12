@@ -5,10 +5,10 @@ Python implementation of the upper ocean structure fitting algorithm described i
 The SHDR algorithm (*Sharp Homogenization/Diffusive Retreat*) performs a
 differential evolution search to fit an upper ocean profile (temperature,
 salinity or density) to an idealized analytical form. This analytical form
-defines a constant region (mixed layer), followed by a combination of
+defines a constant region (mixed layer), followed by a region defined by a combination of
 exponential and gaussian decays (seasonal thermocline) and a linear decay
 (permanent thermocline). The algorithm can be used as a MLD identifying method,
-but it also allows for a physical characterisation of the pycnocline. 
+but it also allows for a physical characterisation of the thermocline/pycnocline. 
 
 ## Installation
 SHDR is a small package. To keep things simple, we decided to source it 
@@ -19,19 +19,19 @@ SHDR, which should be imported in your preferred programming environment.
 A sample call would be
 
 ```python
-from SHDR import fit_time_series # SHDR.py file in working directoy
+from SHDR import fit_profile # SHDR.py file in working directoy
 
-result = fit_time_series(time, density, depth, max_depth=400)
+result = fit_profile(y, z, max_depth=400)
 ```
 
 The [user manual](user_manual.pdf) contains extensive information on how to use the module. 
 For a real use case, please see the [example jupyter notebook](examples.ipynb).
 
 ## Requisites
-* ``python>=3.6``. Tested on python 3.10.
-* ``numpy, pandas, tqdm``
+* ``python >= 3.6``.
+* ``numpy, pandas, tqdm``.
 
-Please ensure these are installed.
+Ensure these packages are installed on your system.
 
 If using pip:
 
@@ -42,8 +42,6 @@ If using conda:
 ``conda install numpy, pandas ``
 
 ``conda install -c conda-forge tqdm``
-
-
 
 ## Citation
 If you use SHDR in your project, please cite the
