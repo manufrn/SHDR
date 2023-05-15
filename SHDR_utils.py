@@ -3,6 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+def _process_input_field(arr):
+    if isinstance(arr, np.ma.core.MaskedArray):
+        processed_array = arr.astype(float).filled(np.nan)
+
+    else:
+        processed_array = np.asarray(arr, dtype=np.float64)
+
+    return np.squeeze(processed_array)
+
+
 def fit_function(z, params):
     '''
     Returns the value of an analytical profile with parametres params at
@@ -92,34 +102,45 @@ def time_series_stratification(time_series_fit, alpha=0.05):
     return stratification
 
 
-def plot_profile_fit(variable, depth, params, figsize=(4, 4.6875)):
+def plot_profile_fit(y, z, params, max_z=None, figsize=(4, 4.6875)):
     '''Plot measured vertical profile and fit for measure at loc
 
     '''
+    y = _process_input_field(y)
+    z = _process_input_field(z)
 
-
-    if isinstance(depth, np.ma.core.MaskedArray):
-        depth = np.asarray(depth[depth.mask==False])
-        variable = np.asarray(variable[variable.mask==False])
     # remove nans in both arrays
-    variable = variable[np.isfinite(depth)]
-    depth = depth[np.isfinite(depth)]
+    y = y[np.isfinite(z)]
+    z = z[np.isfinite(z)]
 
-    depth = depth[np.isfinite(variable)]
-    variable = variable[np.isfinite(variable)]
+    z = z[np.isfinite(y)]
+    y = y[np.isfinite(y)]
+    
+    if isinstance(params, pd.core.series.Series):
+        D1 = params['D1']
 
-    mld = params.D1
-    zz = np.linspace(depth[0], depth[-1] + 5, 300)
-
+    elif isinstance(params, np.ndarray):
+        mld = params[0]
 
     fig, ax = plt.subplots(figsize=figsize)
-    ax.scatter(variable, depth, marker='o', s=24)
-    ax.axhline(mld, c='grey', ls='--') # plot MLD
-    ax.set_ylim(depth[-1] + 10, 0)
 
-    ax.plot(fit_function(params, zz), zz, lw=1)
-    ax.set_xlabel('Temperature ($^\circ$C)')
-    ax.set_ylabel('Depth')
+    if max_z is None:
+        ax.set_ylim(z[-1], 0)
+
+    else:
+        max_idx = np.searchsorted(z, max_z, side='left')
+        z = z[:max_idx]
+        y = y[:max_idx]
+        ax.set_ylim(max_z, 0)
+
+    ax.scatter(y, z, marker='o', s=24)
+    ax.axhline(mld, c='grey', ls='--') # plot MLD
+
+    zz = np.linspace(z[0], z[-1], 800)
+    ax.plot(fit_function(zz, params), zz, lw=1)
+
+    ax.set_xlabel('y')
+    ax.set_ylabel('z')
     # ax.set_title(date_i_str)
     fig.tight_layout()
     plt.show()
