@@ -141,7 +141,6 @@ def plot_profile_fit(y, z, params, max_z=None, figsize=(4, 4.6875)):
 
     ax.set_xlabel('y')
     ax.set_ylabel('z')
-    # ax.set_title(date_i_str)
     fig.tight_layout()
     plt.show()
 
