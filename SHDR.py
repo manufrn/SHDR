@@ -1,6 +1,6 @@
 '''
 This file shouldn't be modified or run for any purpose. Place it in your 
-working directory, and import it's functions to use it. For more please
+working directory, and import it's core functions to use it. For more
 information about using SHDR please refer to the user manual.
 '''
 
@@ -17,23 +17,34 @@ class _FitOptions:
     '''Class defining options for the fitting algorithm.
 
     '''
+
     only_mld: bool = False
     delta_coding: bool = False
-    CR: float = 0.5
-    FF: float = 0.5
+
+    # genetic evolution parameters
+    CR: float = 0.7
+    FF: float = 0.7
     num_generations: int = 1200
     num_individuals: int = 60
+    tol: float = 0.00025
+
+    # fit parameters and safe limits
     max_b2_c2: float = 0.5
     exp_limit: float = 100
     min_depth: float = 50
     max_depth: float = 1000
     min_obs: int = 10
-    tol: float = 0.00025
+    
+    # misc
     seed: int = None
-    save: str = None
+    save: str = None    # only used for time series fit
 
 
 def _process_input_field(arr):
+    '''Basic preprocesing of input arrays.
+
+    '''
+
     if isinstance(arr, np.ma.core.MaskedArray):
         processed_array = arr.astype(float).filled(np.nan)
 
@@ -45,11 +56,10 @@ def _process_input_field(arr):
 
 def _check_time_series_input(time, variable, depth, lat, lon):
     ''' Check dimensional consistency of the input fields 
-    and return a processed version.
+    for a time series fit and return a processed version.
 
     '''
 
-    # make sure to always work with np.ndarray
     time = _process_input_field(time)
     variable = _process_input_field(variable)
     depth = _process_input_field(depth)
@@ -61,8 +71,8 @@ def _check_time_series_input(time, variable, depth, lat, lon):
             raise ValueError('Either neither or both lat and lon must be provided.')
 
     else:
-        lat = process_input_field(lat)
-        lon = process_input_field(lon)
+        lat = _process_input_field(lat)
+        lon = _process_input_field(lon)
 
         if time.shape != lat.shape or time.shape != lon.shape:
             raise ValueError('lat and lon arrays must have the same length as time')
@@ -74,8 +84,8 @@ def _check_time_series_input(time, variable, depth, lat, lon):
     if depth.ndim > 2:
         raise ValueError('Depth must be 1-D or 2-D array.')
 
+    # if depth is 1-D, broadcast it to 2-D
     if depth.ndim == 1:
-        # if depth is 1-D, broadcast it to 2-D
         depth = np.broadcast_to(depth, variable.shape)
 
     if variable.ndim != 2:
@@ -88,6 +98,11 @@ def _check_time_series_input(time, variable, depth, lat, lon):
 
 
 def _check_save_path(path):
+    '''
+    Chech if save file for a time series fit already exists, and
+    if it does, ask if it should be overwritten. 
+
+    '''
     if not path.endswith('.csv'):
         raise ValueError("Output file must be '.csv'")
     
@@ -101,10 +116,10 @@ def _check_save_path(path):
 
 
 def _fit_function(individuals, z, opts: _FitOptions):
-    '''Estimate the function a group of individuals at a height z
+    '''Estimate the function a group of individuals at a height z.
 
     '''
-		
+	
     limit = opts.exp_limit
     D1, b2, c2, b3, a2, a1 = np.split(individuals, 6, axis=1)
 
@@ -120,22 +135,31 @@ def _fit_function(individuals, z, opts: _FitOptions):
 
 def _get_fit_limits(y, z, opts: _FitOptions):
     '''Returns the limits for the parametres of the fit function given a certain
-       profile with meassures y at heights z.
+       profile with meassures y at depths z.
 
     '''
        
-    z = np.abs(z) # in case heights are defined negative
-
+    z = np.abs(z) # in case depths are defined negative
+    
+    decay = True if y[0] > y[-1] else False
     min_z, max_z = z.min(), z.max()
     min_y, max_y = y.min(), y.max()
     
-    lims = np.array([[1.0, max_z],    # D1
-            [0.0, opts.max_b2_c2],    # b2
-            [0.0, opts.max_b2_c2],    # c2
-            [0.0 if max_z < opts.min_depth else - abs((max_y - min_y) / (max_z - min_z)), 0.0], # b3
-            [0.0, max_y - min_y],     # a2
-            [min_y, max_y]])          # a1          
-
+    if decay:
+        lims = np.array([[1.0, max_z],    # D1
+                [0.0, opts.max_b2_c2],    # b2
+                [0.0, opts.max_b2_c2],    # c2
+                [0.0 if max_z < opts.min_depth else - abs((max_y - min_y) / (max_z - min_z)), 0.0], # b3
+                [0.0, max_y - min_y],     # a2
+                [min_y, max_y]])          # a1          
+    
+    else:
+        lims = np.array([[1.0, max_z],    # D1
+                [0.0, opts.max_b2_c2],    # b2
+                [0.0, opts.max_b2_c2],    # c2
+                [0.0, 0.0 if max_z < opts.min_depth else abs((max_y - min_y) / (max_z - min_z))], # b3
+                [- max_y + min_y, 0.0],     # a2
+                [min_y, max_y]])          # a1          
 
     lims_min = lims[:, 0]
     lims_max = lims[:, 1]
@@ -144,9 +168,9 @@ def _get_fit_limits(y, z, opts: _FitOptions):
 
 
 def _random_init_population(y, z, lims, opts: _FitOptions):
-    ''' Returns a random population of solutions of initialized randomly 
-    with values inside the limits for a profile with meassures
-    y at heights z 
+    ''' Returns a random population of solutions with randomly 
+    initialized values for the parameters inside the limits for
+    a profile with meassures y at depths z.
     
     '''
     
@@ -161,7 +185,9 @@ def _random_init_population(y, z, lims, opts: _FitOptions):
 
 
 def _population_fitness(individuals, y, z, opts):
-    '''Estimate the fitting for a group of individuals via mean squared error
+    '''Estimate the fitness for a group of individuals for a profile
+    with meassures y at depths z via mean squared error.
+
     '''
     
     fitness = np.sqrt(np.sum((y - _fit_function(individuals, z, opts))**2, axis=1) / len(y))
@@ -170,7 +196,7 @@ def _population_fitness(individuals, y, z, opts):
 
 def _diferential_evolution(individuals, y, z, lims, opts):
     ''' Perform a diferential evolution on a group of individuals 
-    for a given profile with meassures y at depths z
+    for a given profile with meassures y at depths z.
 
     '''
 
@@ -214,16 +240,24 @@ def _diferential_evolution(individuals, y, z, lims, opts):
         
         if present_fitns.mean() * opts.tol / present_fitns.std() > 1:
             break
-
      
     return best_fit, present_fitns[best_fit_loc]
 
 
-def _fit_profile(y, z, opts): 
-    '''Parse and fit data from a single profile'''
+def _fit_single_profile(y, z, opts): 
+    '''Parse and fit data from a single profile
+
+    '''
+
+    y = _process_input_field(y)
+    z = _process_input_field(z)
+
+    if y.ndim > 1 or z.ndim > 1:
+        raise ValueError('y and z must be 1-D arrays.')
     
     if y.size != z.size:
         return ValueError('y and z must have the same size')
+
     
     # remove nans in both arrays
     y = y[np.isfinite(z)]
@@ -243,18 +277,14 @@ def _fit_profile(y, z, opts):
     
     lims = _get_fit_limits(y, z, opts)
     
-
     lims_min, lims_max = lims
 
     first_gen = _random_init_population(y, z, lims, opts)
     result_1, fitness_1 = _diferential_evolution(first_gen, y, z, lims, opts)  
     
-    
     #### DELTA CODING ####
-    
-    # set new limits for fit in function of previous fit result
+    # set new limits for fit depending of previous fit result
     # and have them meet the physical limits
-
     if opts.delta_coding:
         lims_min_d, lims_max_d = 0.85 * result_1, 1.15 * result_1
         for i in np.where(np.sign(result_1) < 0)[0]:
@@ -385,6 +415,7 @@ def fit_time_series(time, variable, depth, lat=None, lon=None, **opts):
 
     return result_df
 
+
 def fit_profile(y, z, **opts):
     '''
     Fit a single vertical profile using the SHDR algorithm.
@@ -408,7 +439,7 @@ def fit_profile(y, z, **opts):
         Minimum number of observations in the profile to perform fitting.
     CR : float default=0.7
         Cross probability (diferential evolution algorithm).
-    FF: float default=0.6
+    FF: float default=0.7
         Mutation factor (diferential evolution algorithm).
     num_generations : int default=1200
         Number of generations (diferential evolution algorithm).
@@ -434,13 +465,7 @@ def fit_profile(y, z, **opts):
     opts = _FitOptions(**opts)
     np.random.seed(opts.seed)
 
-    y = _process_input_field(y)
-    z = _process_input_field(z)
-
-    if y.ndim > 1 or z.ndim > 1:
-        raise ValueError('y and z must be 1-D arrays.')
-
-    result_fit = _fit_profile(y, z, opts)
+    result_fit = _fit_single_profile(y, z, opts)
 
     if opts.only_mld:
         result = np.asarray([result_fit[0]])
@@ -451,5 +476,6 @@ def fit_profile(y, z, **opts):
     if opts.save is not None:
         _check_save_path(opts.save)
         result_df.to_csv(opts.save, index=False)
+
     return result
 
