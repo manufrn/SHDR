@@ -1,20 +1,22 @@
 # SHDR
 
-Python implementation of the upper ocean structure fitting algorithm described in
-[González-Pola et al. (2007)](https://www.sciencedirect.com/science/article/abs/pii/S0967063707002026).
+Python implementation of the upper ocean structure fitting algorithm described
+in [González-Pola et al.
+(2007)](https://www.sciencedirect.com/science/article/abs/pii/S0967063707002026).
 The SHDR algorithm (*Sharp Homogenization/Diffusive Retreat*) performs a
-differential evolution search to fit an upper ocean profile (temperature,
-salinity or density) to an idealized analytical form. This analytical form
-defines a constant region (mixed layer), followed by a region defined by a combination of
-exponential and gaussian decays (seasonal thermocline) and a linear decay
-(permanent thermocline). The algorithm can be used as a MLD identifying method,
-but it also allows for a physical characterisation of the thermocline/pycnocline. 
+differential evolution search to fit an upper ocean profile to an idealized
+analytical form. This analytical form defines a constant region (mixed layer),
+followed by a region defined by a combination of exponential and gaussian decays
+(seasonal thermocline/pycnocline) and a linear decay (permanent thermocline/pycnocline).
+The algorithm allows for a physical characterization of the
+thermocline/pycnocline, but it can also be used as a robust MLD identifying method.
 
 ## Installation
-SHDR is a small package. To keep things simple, we decided to source it 
-as a standalone module in a single file. To use it, download the file [SHDR.py](SHDR.py) 
-and place it in you working directory. This file contains all the routines needed to run 
-SHDR, which should be imported in your preferred programming environment. 
+SHDR is a small package. To keep things simple, we decided to source it as a
+standalone module in a single file. To use it, download the file
+[SHDR.py](SHDR.py) and place it in you working directory. This file contains all
+the routines needed to run SHDR, which should be imported in your preferred
+programming environment. 
 
 A sample call would be
 
