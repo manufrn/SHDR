@@ -143,4 +143,3 @@ def plot_profile_fit(y, z, params, max_z=None, figsize=(4, 4.6875)):
     ax.set_ylabel('z')
     fig.tight_layout()
     plt.show()
-
